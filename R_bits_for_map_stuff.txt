@@ -1,0 +1,270 @@
+#map of Iowa with big cities
+map("state", "Iowa")
+data("us.cities")
+map.cities(us.cities, country = "IA")
+
+#mapping unemployment by county, nationally
+data("unemp")
+data("county.fips")
+#unemployment by county
+colors=c("#F1EEF6", "#D4B9DA", "#C994C7", "#DF65B0", "#980043")
+head(unemp)
+
+head(county.fips)
+
+unemp$colorBuckets=as.numeric(cut(unemp$unemp, c(0, 2, 4, 6, 8, 10, 100)))
+colorsmatched=unemp$colorBuckets[match(county.fips$fips, unemp$fips)]
+map("county", col = colors[colorsmatched], fill = TRUE, resolution = 0, lty=0, projection = "polyconic")
+
+
+
+
+#border for states
+map("state", col = "white", fill = FALSE, add = TRUE, lty=1, lwd=0.2, projection = "polyconic")
+title("Unemployment by county, 2009")
+leg.txt=c("<2%", "2-4%", "4-6%", "6-8%", "8-10%", ">10%")
+legend("topright", leg.txt, horiz = TRUE, fill = colors)
+
+#put a red point on a map by long and lat
+points(-1.615672,54.977768, col=2, pch=18)
+
+
+# zoom in on IA and add a reference map
+county_choropleth(df_pop_county, 
+                  title         = "Iowa County Population Estimates", 
+                  legend        = "Population",
+                  state_zoom    = "iowa",
+                  reference_map = TRUE)
+
+
+
+#2012 census data for IA without stree map overlay
+library(maps)
+library(mapdata)
+library(maptools)
+library(scales)
+#BD<-read.csv(Bed_Space_County_Locations.csv)
+df<-data.frame()
+
+county_choropleth(df_pop_county, 
+                  title         = "Iowa County Population Estimates", 
+                  legend        = "Population",
+                  state_zoom    = "iowa",
+                  reference_map = FALSE)
+
+
+#This database produces a cartogram of the states of the United States mainland based on CartoDraw,
+roughly proportional to population
+data(stateMapEnv)
+data(state.carto.center)
+map('state.carto', fill = TRUE, col = palette())
+
+
+#FIPS map data
+data(state.fips)
+
+#FIPS county data
+data(county.fips)
+
+#amazing watercolor maps; zoom is 0-18
+SD<-"San Diego"
+qmap(SD, zoom = 12, source = "stamen", maptype = "watercolor")
+
+
+#watercolor map of DSM
+DSM<-"Des Moines"
+qmap(DSM, zoom = 11, source = "stamen", maptype = "watercolor")
+
+
+
+#simple map of DSM
+DSM<-"Des Moines"
+qmap(DSM, zoom = 11, maptype= "terrain-lines", source="stamen")
+
+
+-----------------
+#simple map of DSM with a geolocated point
+DSM<-"Des Moines"
+DSM_map<-qmap(DSM, zoom = 11, maptype= "terrain-lines", source="stamen")
+library(ggmap)
+PO1<-geocode("2505 SW18th st, ankney, ia 50023", source = "google")
+data=(PO1)
+DSM_map+geom_point(aes(x=lon, y = lat), col="red", size=10, data=PO1)
+
+-----------------
+
+#find exact location of a place
+geocode("des moines", output = "more")
+
+------------------------------
+
+#simple map of DSM with a geolocated point
+DSM<-"Des Moines"
+DSM_map<-qmap(DSM, zoom = 11, maptype= "terrain-lines", source="stamen")
+PO1<-geocode("2505 SW18th st, ankeny, ia 50023", source = "google")
+data=(PO1)
+DSM_map+geom_point(aes(x=lon, y = lat), col="red", size=10, data=PO1)
+
+-------------------------------
+
+#make a map with a point at the center, and plot that point
+map<-get_map(location = c(lon= -93.636285, lat=41.713684), zoom = 12, 
+             scale = "auto", maptype = "terrain-lines", source = "osm")
+happymap<-ggmap(map, fullpage=T)
+happymap+geom_point(aes(x=-93.636285, y=41.713684), col="red", size=5)
+
+
+#map of the EB
+map<-get_map(location = c(lon= -93.625190, lat=41.586526), zoom = 3, 
+             scale = "auto", maptype = "watercolor", source = "stamen")
+happymap<-ggmap(map, fullpage=T)
+happymap+geom_point(aes(x=-93.625190, y=41.586526), col="red", size=12)
+
+
+
+--------------------------------
+
+
+# Service area vectors by county number
+SAW<-c(60,13,72,30,32,55,84,71,21,74,75,18,11,97,47,81,67,24,14,37,43,83,5,39,78,15,65,69,36,73,87)
+SAN<-c(95,98,65,45,96,3,41,66,17,34,19,33,22,76,46,99,35,12,9,15,94,40,42,38,7,10,28,64)
+SADM<-c(3,8,85,25,77,1,61,91,63,2,88,20,59,80,27,93)
+SAS<-c(86,6,57,53,50,79,48,52,62,54,92,68,90,51,4,26,89)
+SAE<-c(31,49,16,23,82,70,58,44,56,29)
+
+
+#?df_pop_county
+county_choropleth(df_pop_county)
+data(county.regions)
+head(county.regions)
+data(df_pop_county)
+county_choropleth(df_pop_county,
+                  title= "2012 pop estimates",
+                  legend = "pop",
+                  num_colors = 1,
+                  state_zoom = "iowa")
+#FIPS codes for Des Moines Service Area
+DMSA <- c(19153, 19169, 19015, 19049, 19001, 19121,
+                      19181, 19125, 19003, 19175, 19039, 19117,
+                      19159, 19053, 19185)
+
+county_choropleth(df_pop_county,
+                  title = "2012 Population for DMSA",
+                  legend = "population",
+                  num_colors = 1,
+                  county_zoom = DMSA)
+
+
+#FIPS for SAS
+SAS <- c(19171, 19011, 19113, 19105,
+         19099, 19157, 19095, 19103,
+         19123, 19107, 19183, 
+         19135, 19179, 19101,
+         19007, 19051, 19177)
+
+county_choropleth(df_pop_county,
+                  title = "2012 Population for SAS",
+                  legend = "population",
+                  num_colors = 1,
+                  county_zoom = SAS)
+
+
+
+#FIPS for SEA
+SAE <- c(19061,
+         19097,
+         19031, 19045,
+         19139, 19163,
+         19115,
+         19087, 19057,
+         19111)
+
+county_choropleth(df_pop_county,
+                  title = "2012 Population for SAE",
+                  legend = "population",
+                  num_colors = 1,
+                  county_zoom = SAE)
+
+
+
+#FIPS for SAN
+SAN <- c(19189, 19195, 19131, 19089, 19191, 19005,
+         19081, 19033, 19067, 19037, 19065, 19043,
+         19151, 19091, 19197, 19069, 19023, 19017,
+         19025, 19187, 19079, 19083, 19075, 19013, 19019, 19055,
+         19127)
+
+county_choropleth(df_pop_county,
+                  title = "2012 Population for SAN",
+                  legend = "population",
+                  num_colors = 1,
+                  county_zoom = SAN)
+
+
+
+SAW <- c(19119, 19143, 19059, 19063, 19109,
+         19167, 19141, 19041, 19147,
+         19149, 19035, 19021,
+         19193, 19093, 19161,
+         19133, 19047, 19027, 19073,
+         19085, 19165, 19009, 19077,
+         19155, 19029,
+         19129, 19137,
+         19071, 19145, 19173)
+
+county_choropleth(df_pop_county,
+                  title = "2012 Population for SAW",
+                  legend = "population",
+                  num_colors = 1,
+                  county_zoom = SAW)
+
+
+
+
+############
+#service area-specific choropleths showing stuff (in this case bed spaces from a CSV that had "region" and "value" columns that put 
+FIPS numbers for the counties I wanted displayed and bed counts in "value" for the number of beds to shade to.)
+
+
+library("choroplethr")
+library("choroplethrMaps")
+
+df<-(SAE_bed)
+
+county_choropleth(df, title="Beds in Service Area East", num_colors=1,
+       county_zoom=c(19061, 19097, 19031, 19045, 19139, 19163, 19115, 19087,
+       19057, 19111), legend=NULL)
+
+
+#Des Moines Service ARea
+df<-(DMSA_Beds)
+
+county_choropleth(df, title="Beds in Des Moines Service Area", num_colors=1,
+                  county_zoom=c(19015, 19169, 19049, 19153, 19001, 19121, 19181,
+                                19125, 19003, 19175, 19039, 19117,
+                                19159, 19053, 19185), legend=NULL)
+
+
+#Service Area South
+df<-(SAS_Beds)
+
+county_choropleth(df, title="Service Area South Beds", num_colors=1,
+                  county_zoom=c(19171, 19011, 19113, 19105,
+                                19099, 19157, 19095, 19103,
+                                19123, 19107, 19183,
+                                19135, 19179, 19101,
+                                19007, 19051, 19177), legend=NULL)
+
+
+
+#Service Area West
+df<-(SAW_Beds)
+
+county_choropleth(df, title="Service Area West Beds", num_colors=1,
+                  county_zoom=c(19009, 19021, 19027, 19029, 19035, 19041,
+                                19047, 19059, 19063, 19071, 19073, 19077,
+                                19085, 19093, 19109, 19119, 19129, 19133, 
+                                19137, 19141, 19143, 19145, 19147, 19149, 
+                                19155, 19161, 19165, 19167, 19193), legend=NULL)
+
+
