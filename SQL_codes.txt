@@ -1,0 +1,609 @@
+-- my attempt to pull FFY 2015 IV-E eligible
+use [ODS_CWIS_FACS]
+select *
+from [dbo].[ADPDTL]
+where [DATE_ADOPT_FINAL] between 20151001 and 20160930
+    and [FLAG_IVE_ELIGIBLE] = 'Y'
+
+
+--child abuse by child care providers for CY
+SELECT distinct b.RPT_CHID
+        FROM [ODS_Child_Welfare].[dbo].[FACS_DCDC_PERPETRATOR] p
+   join [ODS_Child_Welfare].[dbo].[FACS_DCDC_BASE] b on b.RPT_RPTID = p.RPT_RPTID
+   where p.REPORTING_DATE = '12/31/2015' --change date's year for different CY JARVIS pulls by 12 month blocks
+  and p.PERREL = '06' 
+  and b.RPT_RPTDISP = '01'
+
+
+--Shelter Care
+select top 100 *
+from [dbo].[CLIENT] C
+join [dbo].[SERVIC] S
+	on C.[CLIENT_PRIMARY_KEY] = S.[CLIENT_FOREIGN_KEY]
+join [dbo].[FOSDTL] F
+	on F.[SERVIC_FOREIGN_KEY] = S.[SERVIC_PRIMARY_KEY]
+where [CODE_ACTUAL_CARE_LVL] = '106'
+order by C.FACS_ID_NBR
+--no data ranges here
+
+
+--Paul's code for shelter care
+Also, here is another query I used in the past for Shelter Care payments for State Fiscal Year 2012 which could be modified to your needs:
+
+select inv.PROV_NBR_PREFIX
+      ,inv.PROV_NBR_CNT
+      ,inv.PROV_NBR_SUFFIX
+      ,invd.STATE_ID_NBR
+      ,invd.SERV_YR
+      ,invd.SERV_MNTH
+      ,invd.CODE_SERV
+      ,invd.INV_OWED_AMT
+      ,invd.INV_PAID_AMT
+      ,w.LAST_NAME
+      ,w.FIRST_NAME
+      ,w.CODE_CNTY
+      ,w.WRKR_ID_NBR
+      ,c2.CASE_MANAGER_PRIMARY
+from dbo.INVOIC inv
+left join dbo.INVDTL invd
+  on inv.INVOIC_PRIMARY_KEY = invd.INVOIC_FOREIGN_KEY
+left join statid s
+  on invd.STATE_ID_NBR = s.STATE_ID_NBR
+left join dbo.CLIENT c
+  on s.STATID_PRIMARY_KEY = c.STATID_FOREIGN_KEY
+left join dbo.WORKER w
+  on invd.WORKER_FOREIGN_KEY = w.WORKER_PRIMARY_KEY
+left join dbo.CLIENT2 c2
+  on c.FACS_ID_NBR = c2.FACS_ID_NBR
+where substring(invd.CODE_SERV,1,2) = '19'
+and ((( invd.SERV_YR = '2011' ) and invd.SERV_MNTH in ('07','08','09','10','11','12') )
+  or (( invd.SERV_YR = '2012' ) and invd.SERV_MNTH in ('01','02','03','04','05','06') ))
+and invd.INV_PAID_AMT > 0
+and inv.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and invd.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and s.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and c.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and w.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and c2.ROW_END_DATE = '9998-12-31 00:00:00.000'
+
+
+--Paul: Also, this is code I have used in the past for pulling shelter care payments
+
+where i.CODE_SERV in ('1991','1992') -- shelter payments
+      and (i.SERV_YR + i.SERV_MNTH) in ('201207','201208','201209','201210',   
+                                      '201211','201212','201301','201302',
+                                      '201303','201304','201305','201306')  --this code pulled invoices for State Fiscal Year 2013
+      and i.INV_PAID_AMT > 0  -- This would also work to exclude zero amount payments
+
+
+
+--SQL Examples:
+
+use [ODS_CWIS_FACS]
+Select * from [dbo].[CLIENT]
+
+use [ODS_CWIS_FACS]
+select top 100 * 
+from [dbo].[STATID]
+
+select C.FACS_ID_NBR 
+from  [dbo].[CLIENT]  C 
+left join [dbo].[SERVIC] SERV
+  on C.[CLIENT_PRIMARY_KEY] = SERV.CLIENT_FOREIGN_KEY
+where SERV.CODE_SERV_TYPE = 'FOCD'
+
+
+select * from [dbo].[SERVIC]
+
+
+select * from [dbo].[PE
+where [FACS_ID_NBR] = '0508957'
+
+select top 1000 [FACS_ID_NBR], [CASE_MANAGER_PRIMARY]
+from [dbo].[CLIENT2]  C
+where [ROW_END_DATE] = '9998-12-31 00:00:00.000'
+order by C.[FACS_ID_NBR]
+
+
+
+--Congregate Care stuff
+use [ODS_CWIS_FACS]
+
+select S.[STATE_ID_NBR]
+      ,C.[FACS_ID_NBR]
+         ,SERV.[CODE_SERV_TYPE]   as Service_Code_Type
+         ,SERV.[DATE_START_SERV]  as Serv_Start_Date
+         ,SERV.[DATE_END_SERV]           as Serv_End_Date
+         ,F.CODE_FINRESP_CNTY            as Fin_Resp_Cnty
+         ,F.[DATE_START]                 as Fin_County_Start_Date
+         ,F.[DATE_END]                   as Fin_County_End_Date
+         ,FD.CODE_ACTUAL_CARE_LVL
+--select * 
+--into #RennyGroupCareCY2016
+from [dbo].[STATID]  S
+left join [dbo].[CLIENT]  C 
+  on S.[STATID_PRIMARY_KEY] = C.[STATID_FOREIGN_KEY]
+left join [dbo].[SERVIC] SERV
+  on C.[CLIENT_PRIMARY_KEY] = SERV.CLIENT_FOREIGN_KEY
+left join [dbo].[FOSDTL] FD
+  on SERV.SERVIC_PRIMARY_KEY = FD.SERVIC_FOREIGN_KEY 
+left join [dbo].[PERSON] P
+  on C.FACS_ID_NBR = P.FACS_ID_NBR
+left join [dbo].[FINCTY] F
+  on C.[CLIENT_PRIMARY_KEY] = F.CLIENT_FOREIGN_KEY
+--where C.FACS_ID_NBR = '0876152'
+where SERV.CODE_SERV_TYPE = 'FOCD'
+and FD.CODE_ACTUAL_CARE_LVL in ('101','102','103','107')  -- Community, Comprehensive, Enhanced, Highly Structured ( Boot Camp )
+--and SERV.DATE_START_SERV <= @serv_End_Date 
+--and SERV.DATE_END_SERV >= @serv_Start_Date
+and SERV.DATE_END_SERV = '99999999'
+and F.DATE_END = '99999999'
+and S.ROW_END_DATE    = '9998-12-31 00:00:00.000'
+and C.ROW_END_DATE    = '9998-12-31 00:00:00.000'
+and SERV.ROW_END_DATE = '9998-12-31 00:00:00.000'
+and FD.ROW_END_DATE   = '9998-12-31 00:00:00.000'
+and P.ROW_END_DATE    = '9998-12-31 00:00:00.000'
+and F.ROW_END_DATE    = '9998-12-31 00:00:00.000'
+order by C.FACS_ID_NBR, SERV.DATE_START_SERV desc
+
+--COngregate Care
+use [ODS_CWIS_FACS]
+
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160803'  -- date that you are running query
+set @serv_Start_Date = '20160101'  
+set @serv_End_Date = '20160803'
+select S.[STATE_ID_NBR]
+      ,C.[FACS_ID_NBR]
+         ,SERV.[CODE_SERV_TYPE]   as Service_Code_Type
+         ,SERV.[DATE_START_SERV]  as Serv_Start_Date
+         ,SERV.[DATE_END_SERV]           as Serv_End_Date
+         ,F.CODE_FINRESP_CNTY            as Fin_Resp_Cnty
+         ,F.[DATE_START]                 as Fin_County_Start_Date
+         ,F.[DATE_END]                          as Fin_County_End_Date
+         ,FD.CODE_ACTUAL_CARE_LVL
+--select * 
+--into #RennyGroupCareCY2016
+from [dbo].[STATID]  S
+left join [dbo].[CLIENT]  C 
+  on S.[STATID_PRIMARY_KEY] = C.[STATID_FOREIGN_KEY]
+left join [dbo].[SERVIC] SERV
+  on C.[CLIENT_PRIMARY_KEY] = SERV.CLIENT_FOREIGN_KEY
+left join [dbo].[FOSDTL] FD
+  on SERV.SERVIC_PRIMARY_KEY = FD.SERVIC_FOREIGN_KEY 
+left join [dbo].[PERSON] P
+  on C.FACS_ID_NBR = P.FACS_ID_NBR
+left join [dbo].[FINCTY] F
+  on C.[CLIENT_PRIMARY_KEY] = F.CLIENT_FOREIGN_KEY
+--where C.FACS_ID_NBR = '0876152'
+where SERV.CODE_SERV_TYPE = 'FOCD'
+and FD.CODE_ACTUAL_CARE_LVL in ('101','102','103','107')  -- Community, Comprehensive, Enhanced, Highly Structured ( Boot Camp )
+and SERV.DATE_START_SERV <= @serv_End_Date 
+and SERV.DATE_END_SERV >= @serv_Start_Date
+and F.[DATE_END] = '99999999'
+and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+and @date_Parm between SERV.ROW_START_DATE and SERV.ROW_END_DATE
+and @date_Parm between FD.ROW_START_DATE and FD.ROW_END_DATE
+and @date_Parm between P.ROW_START_DATE and P.ROW_END_DATE
+and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR, SERV.[DATE_START_SERV] desc
+
+
+select * 
+from #RennyGroupCareCY2016
+
+--------------------------------------------
+
+
+-- child care abuse stuff
+SELECT distinct b.RPT_CHID
+        FROM [ODS_Child_Welfare].[dbo].[FACS_DCDC_PERPETRATOR] p
+   join [ODS_Child_Welfare].[dbo].[FACS_DCDC_BASE] b on b.RPT_RPTID = p.RPT_RPTID
+   where p.REPORTING_DATE = '12/31/2015'
+  and p.PERREL = '06' --child care provider code
+  and b.RPT_RPTDISP = '01' --confirmed and founded code, they are lumped
+
+
+
+ ------------------
+--returns to group care
+--RETURNS 229
+--youth returning to group care from group care within the last 6 months
+use [ODS_CWIS_FACS]
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160913'              --This is the date of your query run
+set @serv_Start_Date = '20150101' --Service Start Date 
+set @serv_End_Date   = '20151231' --Service End Date
+
+select  C.[FACS_ID_NBR] as FACS_ID --from CLIENT
+       ,F.[CODE_ACTUAL_CARE_LVL] as Current_Level_of_Care --from FOSDTL data      
+       ,F.[CODE_LVG_ARR_PRIOR] as Group_Care_IA_return --from FOSDTL data
+          ,S.[DATE_START_SERV] as Service_Start_Date
+       ,S.[DATE_END_SERV] as Service_End_Date
+from [dbo].[CLIENT] C
+left join  [dbo].[SERVIC] S
+       on S.[CLIENT_FOREIGN_KEY] = C.[CLIENT_PRIMARY_KEY]
+left join [dbo].[FOSDTL] F
+       on F.[SERVIC_FOREIGN_KEY] = S.[SERVIC_PRIMARY_KEY]
+where F.[CODE_ACTUAL_CARE_LVL] in ('101','102','103')  --Group Care 
+       and  F.[CODE_LVG_ARR_PRIOR] = '109'   --Previous Licensed foster group care in Iowa
+          and S.DATE_START_SERV <= @serv_End_Date
+       and S.DATE_END_SERV > @serv_Start_Date
+       and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+          and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+          and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR
+
+
+-----------------------------------------------------------------------------
+
+--RETURNS 209
+--youth returning to group care from group care within the last 6 months
+use [ODS_CWIS_FACS]
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160913'              --This is the date of your query run
+set @serv_Start_Date = '20150101' --Service Start Date 
+set @serv_End_Date   = '20151231' --Service End Date
+
+select  distinct C.[FACS_ID_NBR] as FACS_ID --from CLIENT
+    --   ,F.[CODE_ACTUAL_CARE_LVL] as Current_Level_of_Care --from FOSDTL data      
+    --   ,F.[CODE_LVG_ARR_PRIOR] as Group_Care_IA_return --from FOSDTL data
+          --,S.[DATE_START_SERV] as Service_Start_Date
+    --   ,S.[DATE_END_SERV] as Service_End_Date
+from [dbo].[CLIENT] C
+left join  [dbo].[SERVIC]
+       on S.[CLIENT_FOREIGN_KEY] = C.[CLIENT_PRIMARY_KEY]
+left join [dbo].[FOSDTL] F
+       on F.[SERVIC_FOREIGN_KEY] = S.[SERVIC_PRIMARY_KEY]
+where F.[CODE_ACTUAL_CARE_LVL] in ('101','102','103')  --Group Care 
+       and  F.[CODE_LVG_ARR_PRIOR] = '109'   --Previous Licensed foster group care in Iowa
+          and S.DATE_START_SERV <= @serv_End_Date
+       and S.DATE_END_SERV > @serv_Start_Date
+       and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+          and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+          and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR
+
+
+
+
+
+
+---------------------
+--count of unique FACS numbers in shelter SFY15
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160915'  -- date that you are running query
+set @serv_Start_Date = '20150631'  
+set @serv_End_Date = '20160701'
+
+select count (distinct C.[FACS_ID_NBR]) as FACS	 
+from [dbo].[STATID]  S
+left join [dbo].[CLIENT]  C 
+  on S.[STATID_PRIMARY_KEY] = C.[STATID_FOREIGN_KEY]
+left join [dbo].[SERVIC] SERV
+  on C.[CLIENT_PRIMARY_KEY] = SERV.CLIENT_FOREIGN_KEY
+left join [dbo].[FOSDTL] FD
+  on SERV.SERVIC_PRIMARY_KEY = FD.SERVIC_FOREIGN_KEY 
+left join [dbo].[PERSON] P
+  on C.FACS_ID_NBR = P.FACS_ID_NBR
+left join [dbo].[FINCTY] F
+  on C.[CLIENT_PRIMARY_KEY] = F.CLIENT_FOREIGN_KEY
+where  SERV.CODE_SERV_TYPE = 'FOCD'
+and FD.CODE_ACTUAL_CARE_LVL in ('106')  -- shelter
+
+and SERV.DATE_START_SERV <= @serv_End_Date 
+and SERV.DATE_END_SERV >= @serv_Start_Date
+and F.[DATE_END] = '99999999'
+and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+and @date_Parm between SERV.ROW_START_DATE and SERV.ROW_END_DATE
+and @date_Parm between FD.ROW_START_DATE and FD.ROW_END_DATE
+and @date_Parm between P.ROW_START_DATE and P.ROW_END_DATE
+and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+
+
+
+---------------------------
+
+
+--RETURNS 229
+--youth returning to group care from group care within the last 6 months
+use [ODS_CWIS_FACS]
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160913'              --This is the date of your query run
+set @serv_Start_Date = '20150101' --Service Start Date 
+set @serv_End_Date   = '20151231' --Service End Date
+
+select  C.[FACS_ID_NBR] as FACS_ID --from CLIENT
+       ,F.[CODE_ACTUAL_CARE_LVL] as Current_Level_of_Care --from FOSDTL data      
+       ,F.[CODE_LVG_ARR_PRIOR] as Group_Care_IA_return --from FOSDTL data
+          ,S.[DATE_START_SERV] as Service_Start_Date
+       ,S.[DATE_END_SERV] as Service_End_Date
+from [dbo].[CLIENT] C
+left join  [dbo].[SERVIC] S
+       on S.[CLIENT_FOREIGN_KEY] = C.[CLIENT_PRIMARY_KEY]
+left join [dbo].[FOSDTL] F
+       on F.[SERVIC_FOREIGN_KEY] = S.[SERVIC_PRIMARY_KEY]
+where F.[CODE_ACTUAL_CARE_LVL] in ('101','102','103')  --Group Care 
+       and  F.[CODE_LVG_ARR_PRIOR] = '109'   --Previous Licensed foster group care in Iowa
+          and S.DATE_START_SERV <= @serv_End_Date
+       and S.DATE_END_SERV > @serv_Start_Date
+       and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+          and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+          and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR
+
+
+-----------------------------------------------------------------------------
+
+--RETURNS 209
+--youth returning to group care from group care within the last 6 months
+use [ODS_CWIS_FACS]
+declare @date_Parm as varchar(8)
+declare @serv_Start_Date as varchar(8)
+declare @serv_End_Date as varchar(8)
+
+set @date_Parm = '20160913'              --This is the date of your query run
+set @serv_Start_Date = '20150101' --Service Start Date 
+set @serv_End_Date   = '20151231' --Service End Date
+
+select  distinct C.[FACS_ID_NBR] as FACS_ID --from CLIENT
+    --   ,F.[CODE_ACTUAL_CARE_LVL] as Current_Level_of_Care --from FOSDTL data      
+    --   ,F.[CODE_LVG_ARR_PRIOR] as Group_Care_IA_return --from FOSDTL data
+          --,S.[DATE_START_SERV] as Service_Start_Date
+    --   ,S.[DATE_END_SERV] as Service_End_Date
+from [dbo].[CLIENT] C
+left join  [dbo].[SERVIC] S
+       on S.[CLIENT_FOREIGN_KEY] = C.[CLIENT_PRIMARY_KEY]
+left join [dbo].[FOSDTL] F
+       on F.[SERVIC_FOREIGN_KEY] = S.[SERVIC_PRIMARY_KEY]
+where F.[CODE_ACTUAL_CARE_LVL] in ('101','102','103')  --Group Care 
+       and  F.[CODE_LVG_ARR_PRIOR] = '109'   --Previous Licensed foster group care in Iowa
+          and S.DATE_START_SERV <= @serv_End_Date
+       and S.DATE_END_SERV > @serv_Start_Date
+       and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+          and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+          and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR
+
+
+
+---------------
+
+
+
+
+--Mal types equate as follows based off NCANDS Documentation;
+       --1          Physical abuse
+       --2          Neglect or deprivation of necessities
+       --3          Medical neglect
+       --4          Sexual abuse
+       --5          Psychological or emotional maltreatment
+       --6          No alleged maltreatment
+       --8          Other
+      --9          Unknown or missing
+
+
+--Child abuse by Child Daycare Providers for Calendar Year
+use ODS_Child_Welfare  --NCANDS data
+
+declare @CalendarYearDate as varchar(10)
+
+set @CalendarYearDate = '12/31/2015'
+
+select distinct substring(b.RPT_RPTID,3,10)            as IncidentNbr
+               ,substring(b.RPT_CHID,3,7)              as Child_FACSID
+               ,substring(p.PERID,3,7)                 as Perp_ID
+               ,((b.RPT_RPTCNTY + 1) / 2)              as Report_Cnty
+               ,p.PERREL                               as PerpRelationshipCode
+               ,isnull(MALTRT_CHMAL_1, ' ')            as Mal_Type_1
+                        ,case MALTRT_CHMAL_1
+                           when '1' then 'Physical abuse'     
+                             when '2' then 'Neglect or deprivation of necessities'       
+                             when '3' then 'Medical neglect' 
+                             when '4' then 'Sexual abuse'    
+                  when '5' then 'Psychological or emotional maltreatment'  
+                  when '6' then 'No alleged maltreatment'     
+                  when '8' then 'Other'  
+                  when '9' then 'Unknown or missing'
+                           else ' '      
+                end                                    as Mal_Type_1_Desc
+               ,isnull(MALTRT_CHMAL_2, ' ')            as Mal_Type_2
+                        ,case MALTRT_CHMAL_2
+                           when '1' then 'Physical abuse'     
+                             when '2' then 'Neglect or deprivation of necessities'       
+                             when '3' then 'Medical neglect' 
+                             when '4' then 'Sexual abuse'    
+                  when '5' then 'Psychological or emotional maltreatment'  
+                  when '6' then 'No alleged maltreatment'     
+                  when '8' then 'Other'  
+                  when '9' then 'Unknown or missing'
+                           else ' '      
+                end                                    as Mal_Type_2_Desc
+               ,isnull(MALTRT_CHMAL_3, ' ')            as Mal_Type_3
+                        ,case MALTRT_CHMAL_3                      
+                           when '1' then 'Physical abuse'     
+                             when '2' then 'Neglect or deprivation of necessities'       
+                             when '3' then 'Medical neglect' 
+                             when '4' then 'Sexual abuse'    
+                  when '5' then 'Psychological or emotional maltreatment'  
+                  when '6' then 'No alleged maltreatment'     
+                  when '8' then 'Other'  
+                  when '9' then 'Unknown or missing'
+                           else ' '      
+                end                                    as Mal_Type_3_Desc
+               ,isnull(MALTRT_CHMAL_4, ' ' )           as Mal_Type_4
+                        ,case MALTRT_CHMAL_4
+                           when '1' then 'Physical abuse'     
+                             when '2' then 'Neglect or deprivation of necessities'       
+                             when '3' then 'Medical neglect' 
+                             when '4' then 'Sexual abuse'    
+                  when '5' then 'Psychological or emotional maltreatment'  
+                  when '6' then 'No alleged maltreatment'     
+                  when '8' then 'Other'  
+                  when '9' then 'Unknown or missing'
+                         else ' '         
+                end                                    as Mal_Type_4_Desc
+into #NCANDS
+from [ODS_Child_Welfare].[dbo].[FACS_DCDC_PERPETRATOR] p
+left join [ODS_Child_Welfare].[dbo].[FACS_DCDC_BASE] b 
+   on b.RPT_RPTID = p.RPT_RPTID
+where p.REPORTING_DATE = @CalendarYearDate      --change date's year for different Calendar Years as NCANDS pulls by 12 month blocks
+  and p.PERREL in ('06','88')                   --abuse type is by Child Daycare Provider or Other that has BabySitter and Daycare Homes - Not Registered 
+  and b.RPT_RPTDISP = '01'                      --abuse setting is in Child Daycare centers
+
+
+select * from #NCANDS
+order by IncidentNbr
+--drop table #NCANDS
+
+#then:
+
+use CWIS_JARVIS  --JARVIS data
+
+select Inc.IncidentNbr                   as IncidentNbr
+      ,#NCANDS.Child_FACSID       as Child_FACSID
+      ,#NCANDS.Perp_ID                   as Perp_ID
+         ,#NCANDS.Report_Cnty            as Report_Cnty
+         ,#NCANDS.Mal_Type_1             as Mal_Type_1
+         ,#NCANDS.Mal_Type_1_Desc        as Mal_Type_1_Desc
+         ,#NCANDS.Mal_Type_2             as Mal_Type_2
+         ,#NCANDS.Mal_Type_2_Desc        as Mal_Type_2_Desc
+         ,#NCANDS.Mal_Type_3             as Mal_Type_3
+         ,#NCANDS.Mal_Type_3_Desc        as Mal_Type_3_Desc
+         ,#NCANDS.Mal_Type_4             as Mal_Type_4
+         ,#NCANDS.Mal_Type_4_Desc        as Mal_Type_4_Desc    
+      ,lkpPR.LegacyCode                  as FACS
+      ,lkpPR.PerpRelationshipDesc
+
+from Star.tblIncident  Inc
+left join Star.tblIncidentPerson IncPrsn on  Inc.IntakeID = IncPrsn.IntakeID
+left join Star.tblIncidentPerp  IncP            on IncPrsn.IncidentPersonID = IncP.IncidentPersonID
+left join #NCANDS                                             on IncPrsn.FacsId = #NCANDS.Perp_ID
+left join Star.lkpPerpRelationship lkpPR on IncP.PerpRelationshipID = lkpPR.PerpRelationshipID
+where exists ( select null
+               from #NCANDS
+               where #NCANDS.IncidentNbr = Inc.IncidentNbr 
+                        and  #NCANDS.Perp_ID = IncPrsn.FacsId )
+and lkpPR.LegacyCode in ( 'I','J','K','N' )   --these codes are BabySitter, Day Care Home - Registered, Day Care Center, and Day Care Homes - Not Registered
+order by Inc.IncidentNbr, IncPrsn.FacsId 
+
+
+
+-----------------------------------------------------------------------------
+#my shitty attempt at IV-E stuff for adoption delink
+
+
+--------------
+select distinct P.FACS_ID_NBR
+	,P.[LAST_NAME]
+	,P.[FIRST_NAME]
+	,P.[MIDDLE_NAME]
+	,P.[CODE_ETHNICITY]
+	,P.CODE_AUDIT_CNTY_R
+	,P.[DATE_BIRTH]
+
+from [dbo].[PERSON]P
+where P.FACS_ID_NBR = '8533309'
+
+
+--------------------
+
+select distinct 
+	C2.[WORKER_LAST_NAME]
+	,C2.[WORKER_FIRST_NAME]
+	,C2.ROW_START_DATE
+	,C2.[CASE_MANAGER_PRIMARY]
+	--,C2.[WORKER_MIDDLE_NAME]
+	,C2.[ADOPT_TYPE] --where type is 102
+	
+	,C2.AUDIT_WRKR_ID_NBR_R
+
+from [dbo].[CLIENT2]C2
+where C2.FACS_ID_NBR = '1404612'
+order by C2.ROW_START_DATE
+
+----------------------
+
+
+use [ODS_CWIS_FACS]
+
+select distinct CL.[FACS_ID_NBR]
+	,CL.[STATE_ID_NBR]		 
+	,AD.[FLAG_IVE_ELIGIBLE] --Y
+	,AD.[CODE_TYPE_ADOPT] --where type is S
+	,AD.[ADOPT_SUBSIDY_TYPE] --where type is 300
+	,AD.[DATE_ADOPT_FINAL]
+	,SRVC.[CODE_SERV_TYPE] --where type is ADOD
+	,SRVC.[CODE_END_REASON] -- where reason is 957
+	,SRVC.[DATE_START_SERV]
+	,SRVC.[DATE_END_SERV]
+	,SRVC.DATE_END_SERV_PROJ
+	,SRVC.AUDIT_WRKR_ID_NBR_R
+	,SRVC.CODE_AUDIT_CNTY_R
+ from [dbo].[PERSON]P
+	left join [dbo].[CLRELT]CLR
+		on CLR.[PERSON_FOREIGN_KEY] = P.[PERSON_PRIMARY_KEY]  --Person to CLRELT
+	left join [dbo].[CLIENT]CL
+		on CLR.[CLIENT_FOREIGN_KEY] = CL.[CLIENT_PRIMARY_KEY]  --CLRELT to Client
+	left join [dbo].[SERVIC]SRVC
+		on SRVC.CLIENT_FOREIGN_KEY= CL.[CLIENT_PRIMARY_KEY]
+	left join [dbo].[ADPDTL]AD
+		on AD.SERVIC_FOREIGN_KEY = SRVC.SERVIC_PRIMARY_KEY
+	--left join [dbo].[FOSDTL]F
+	--	on F.SERVIC_FOREIGN_KEY = SRVC.SERVIC_PRIMARY_KEY
+
+where CL.[FACS_ID_NBR] = '0605722'
+order by SRVC.[DATE_END_SERV]
+
+
+--,P.[DATE_BIRTH]
+	--,P.[LAST_NAME]
+	--,P.[FIRST_NAME]
+	--,P.[MIDDLE_NAME]
+	--,P.[CODE_ETHNICITY]
+	--,P.CODE_AUDIT_CNTY_R
+	--,P.FACS_ID_NBR
+	--,F.WRKR_ID_NBR
+	--,F.CODE_ACTUAL_CARE_LVL
+	--,F.CODE_CNTY
+
+--into #Delink
+--from [ODS_CWIS_FACS]
+--left join C2.[FACS_ID_NBR] on CL.[FACS_ID_NBR]
+
+--select * from #Delink
+
+
+--use [ODS_CWIS_FACS]
+
+
+
+--and AD.[ADOPT_SUBSIDY_TYPE] = '300'
+--and AD.[CODE_TYPE_ADOPT] = 'S'
+----and SRVC.[CODE_SERV_TYPE] = 'ADOD'
+----and SRVC.[CODE_SERV_TYPE] = '957'
+----and @date_Parm between SRVC.DATE_START_SERV and SRVC.DATE_END_SERV
+--and SRVC.[DATE_START_SERV] >= '20151001'
+--and SRVC.DATE_END_SERV <= '20160930'
+--order by CL.FACS_ID_NBR
+
+
+---------------------------------------------------------------------------
+
