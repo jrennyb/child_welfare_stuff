@@ -607,3 +607,91 @@ order by SRVC.[DATE_END_SERV]
 
 ---------------------------------------------------------------------------
 
+
+--New query after modifying query to add Provider Name, Provider Number, Level, Type, Rate, etc.
+
+--Parameterized for any time period you want
+--Returned 1564 rows
+use [ODS_CWIS_FACS]
+declare @date_Parm                as varchar(8)
+declare @serv_Start_Date   as varchar(8)
+declare @serv_End_Date            as varchar(8)
+
+
+set @date_Parm       = '20161012'  -- date that you are running query
+set @serv_Start_Date = '20150701'  --using todays date for both Start and End date will give you current active placements
+set @serv_End_Date   = '20160630'  --otherwise specify a timeframe for the data pull
+  
+
+select S.STATE_ID_NBR                    as StateID
+      ,C.FACS_ID_NBR              as FACSID
+         ,F.CODE_FINRESP_CNTY            as Fin_Resp_Cnty
+         ,F.DATE_START                          as Fin_County_Start_Date
+         ,F.DATE_END                     as Fin_County_End_Date
+         ,SERV.CODE_SERV_TYPE            as [Service Code Type]
+      ,fa.FAC_NAME                       as [Provider Name]                                                                 
+      ,fa.PROV_NBR_PREFIX + fa.PROV_NBR_CNTY + fa.PROV_NBR_SUFFIX as [Provider Nbr]
+         ,SERV.DATE_START_SERV           as [Service Start Date]
+         ,SERV.DATE_END_SERV             as [Service End Date]
+         ,FD.CODE_ACTUAL_CARE_LVL  as [Group Care Level Code]
+         ,Case FD.CODE_ACTUAL_CARE_LVL
+            when '101' then 'Community'
+            when '102' then 'Comprehensive'
+            when '103' then 'Enhanced'
+            when '107' then 'Highly Structured'
+       End                                      as [Group Care Level Desc]
+         ,Case FD.CODE_ACTUAL_CARE_LVL
+            when '101' then 'D1'
+            when '102' then 'D2'
+            when '103' then 'D3'
+            when '107' then 'D4'
+       End                                      as [Level]
+      ,Case substring(v.CODE_SERV,3,1)   
+            when '6'  then  'Service'
+              when '9'  then 'Maintenance'
+       End                                      as [Type]
+         ,v.CODE_SERV                           as [Service Code]
+      ,pr.PROV_RATE                      as [Provider Per Diem Rate]
+      --,pr.DATE_RATE_EFFEC
+      --,pr.DATE_RATE_END
+--into #RennyGroupCareCY2016
+from [dbo].[STATID]  S
+left join [dbo].[CLIENT]  C 
+  on S.STATID_PRIMARY_KEY = C.[STATID_FOREIGN_KEY]
+left join [dbo].[SERVIC] SERV
+  on C.CLIENT_PRIMARY_KEY = SERV.CLIENT_FOREIGN_KEY
+left join [dbo].[FOSDTL] FD
+  on SERV.SERVIC_PRIMARY_KEY = FD.SERVIC_FOREIGN_KEY
+left join dbo.VARSVC v
+  on SERV.SERVIC_PRIMARY_KEY = v.SERVIC_FOREIGN_KEY
+left join dbo.FACLTY fa
+  on serv.FACLTY_FOREIGN_KEY = fa.FACLTY_PRIMARY_KEY
+left join [dbo].[PROVDR] prv
+  on fa.PROVDR_FOREIGN_KEY = prv.PROVDR_PRIMARY_KEY
+left join [dbo].[PRRATE] pr
+  on prv.PROVDR_PRIMARY_KEY = pr.PROVDR_FOREIGN_KEY
+left join [dbo].[PERSON] P
+  on C.FACS_ID_NBR = P.FACS_ID_NBR
+left join [dbo].[FINCTY] F
+  on C.[CLIENT_PRIMARY_KEY] = F.CLIENT_FOREIGN_KEY
+where SERV.CODE_SERV_TYPE = 'FOCD'
+and FD.CODE_ACTUAL_CARE_LVL in ('101','102','103','107')  -- D1 Community, D2 Comprehensive, D3 Enhanced, D4 Highly Structured ( Boot Camp )
+and SERV.DATE_START_SERV <= @serv_End_Date 
+and SERV.DATE_END_SERV   >= @serv_Start_Date
+and F.[DATE_END] = '99999999'
+and v.code_serv = pr.code_serv
+and v.DATE_END_VAR_SERV >= @serv_Start_Date
+and v.DATE_START_VAR_SERV <= @serv_End_Date
+and pr.date_rate_end = '99999999'
+and @date_Parm between S.ROW_START_DATE and S.ROW_END_DATE
+and @date_Parm between C.ROW_START_DATE and C.ROW_END_DATE
+and @date_Parm between SERV.ROW_START_DATE and SERV.ROW_END_DATE
+and @date_Parm between v.ROW_START_DATE and v.ROW_END_DATE
+and @date_Parm between fa.ROW_START_DATE and fa.ROW_END_DATE
+and @date_Parm between FD.ROW_START_DATE and FD.ROW_END_DATE
+and @date_Parm between prv.ROW_START_DATE and prv.ROW_END_DATE
+and @date_Parm between pr.ROW_START_DATE and pr.ROW_END_DATE
+and @date_Parm between P.ROW_START_DATE and P.ROW_END_DATE
+and @date_Parm between F.ROW_START_DATE and F.ROW_END_DATE
+order by C.FACS_ID_NBR, SERV.DATE_START_SERV desc, fa.FAC_NAME, v.CODE_SERV
+
